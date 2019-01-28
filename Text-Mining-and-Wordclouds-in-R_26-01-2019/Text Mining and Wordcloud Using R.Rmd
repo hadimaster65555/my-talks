@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### Catatan
 
-- Beberapa hasil yang diperoleh dibawah ini menggunakan R versi 3.5.2 dengan OS Linux LXLE 16.04, jika terjadi perubahan hasil ketika melakukan eksekusi kemungkinan besar diakibatkan karena sistem atau perbedaan versi R 
+- Beberapa hasil yang diperoleh dibawah ini menggunakan R versi 3.5.2 dengan OS Linux LXLE 16.04 dan Windows 7. Jika terjadi perubahan hasil ketika melakukan eksekusi kemungkinan besar diakibatkan karena sistem atau perbedaan versi R 
 
 # Instalasi Library
 *Install* beberapa library berikut jika belum ada:
@@ -20,7 +20,8 @@ knitr::opts_chunk$set(echo = TRUE)
 install.packages("rvest")
 install.packages("tidytext")
 install.packages("corpus")
-install.packages("wordcloud2")
+install.packages("devtools")
+devtools::install_github("lchiffon/wordcloud2")
 install.packages("dplyr")
 ```
 
@@ -408,10 +409,13 @@ df %>% # Dari df
   unnest_tokens(output = Tokenized, input = TEKS) %>% # Tokenize TEKS dengan nama output Tokenized
   anti_join(y = stopword, by = c("Tokenized" = "stopword")) %>%  # Buang stopword
   count(Tokenized, sort = T) %>%  # Hitung frekuensi setiap huruf
-  wordcloud2(backgroundColor = "dark", size = 0.5)
+  wordcloud2()
 ```
 
 Berikut hasil visualisasi dari masing-masing calon pada teks debat beberapa hari yang lalu:
+
+**Jokowi**
+
 ```{r}
 df %>% # Dari df 
   # Filter data berdasarkan AKTOR "Jokowi"
@@ -422,6 +426,10 @@ df %>% # Dari df
   count(Tokenized, sort = T) %>%  # Hitung frekuensi setiap huruf
   wordcloud2(backgroundColor = "dark", size = 0.5)
 ```
+
+
+**Ma'ruf**
+
 
 ```{r}
 df %>% # Dari df 
@@ -434,6 +442,10 @@ df %>% # Dari df
   wordcloud2(backgroundColor = "dark", size = 0.5)
 ```
 
+
+**Prabowo**
+
+
 ```{r}
 df %>% # Dari df 
   # Filter data berdasarkan AKTOR "Prabowo"
@@ -444,6 +456,10 @@ df %>% # Dari df
   count(Tokenized, sort = T) %>%  # Hitung frekuensi setiap huruf
   wordcloud2(backgroundColor = "dark", size = 0.5)
 ```
+
+
+**Sandi**
+
 
 ```{r}
 df %>% # Dari df 

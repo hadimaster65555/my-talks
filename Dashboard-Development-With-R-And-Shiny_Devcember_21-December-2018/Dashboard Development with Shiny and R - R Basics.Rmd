@@ -1,0 +1,186 @@
+---
+title: "Dashboard Development with Shiny and R - R Basics"
+author: "Raden Muhammad Hadi"
+date: "December 20, 2018"
+output: html_document
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Basic Arithmetic
+```{r}
+1+2
+2-3
+4*5
+6/3
+10^10
+sqrt(100)
+exp(1)
+```
+
+## Object
+```{r}
+# String
+kata <- "Hello World"
+kata
+str(kata)
+
+# number
+bilangan = 1.5
+bilangan
+str(bilangan)
+
+# Logical
+A <- TRUE
+isFALSE(A)
+B <- F
+isFALSE(F)
+
+# array/vector
+vektor <- c(1:10)
+vektor
+str(vektor)
+
+# matriks
+matriks <- matrix(data = 1:9,nrow = 9,ncol = 1)
+matriks
+str(matriks)
+
+# list
+daftar <- list(daftar1 = c(1,2,3,4),
+          daftar2 = "hello",
+          daftar3 = "python sucks")
+daftar$daftar1
+str(daftar)
+daftar$daftar1
+
+# dataframe
+kerangkaData <- data.frame(nomor = c(1,2),
+                           nama = c("Hadi","Suryo"))
+str(kerangkaData)
+```
+
+## Basic Plotting
+```{r, echo=FALSE}
+# Scatter Plot
+plot(x = c(1:20), y = exp(c(1:20)), xlab = "nilai x")
+```
+
+```{r}
+# Histogram
+x <- rnorm(n = 100,mean = 0,sd = 1)
+hist(x)
+```
+
+```{r}
+# Pie Chart
+slices <- c(10, 12,4, 16, 8)
+lbls <- c("A", "B", "C", "D", "E")
+pie(slices, labels = lbls, main="Pie Chart")
+```
+
+## Looping
+```{r}
+# For Loop
+for (x in c(1:10)) {
+  print(x)
+}
+```
+
+```{r}
+# while loop
+x <- 0
+while (x < 10) {
+  print(x)
+  x <- x + 1
+}
+```
+
+## Control Flow
+```{r}
+# If-Else
+x <- 3
+if (2 %% x == 0) {
+  print("x Genap")
+} else {
+  print("x Ganjil")
+}
+```
+
+## Built-In Function
+```{r}
+# normal distribution generator
+x <- rnorm(100,0,1)
+x
+```
+
+```{r}
+# Basic Statistical Function
+mean(x)
+sd(x)
+median(x)
+var(x)
+
+df <- iris
+summary(df)
+```
+
+## File IO
+```{r}
+# read CSV file
+read.csv("./fasilitas-sekolah-2016-2017.csv", stringsAsFactors = F)
+```
+
+```{r}
+library(readxl)
+# read xlsx file
+readxl::read_xlsx("./angkatan-kerja-per-provinsi.xlsx")
+```
+
+```{r}
+# Read from online source and save to disk
+df <- read.csv("https://archive.ics.uci.edu/ml/machine-learning-databases/00382/c2k_data_comma.csv")
+write.csv(df,file = "data-online.csv")
+```
+
+
+## Machine Learning
+```{r}
+# K-Means (Unsupervised Learning)
+df <- iris
+model <- kmeans(df[,-5], centers = 3)
+plot(df$Sepal.Length, df$Petal.Length, col = model$cluster)
+```
+
+```{r}
+library(shiny)
+
+ui <- fluidPage(
+  h1("Hello, World!"),
+  sidebarLayout(
+    sidebarPanel(
+      textInput("textHello","Isi teks","Hello")
+    ),
+    mainPanel(
+      textOutput("textOutput")
+    )
+  )
+)
+
+server <- function(input, output, session) {
+
+  output$textOutput <- reactive({
+    input$textHello
+  })
+  
+  
+}
+
+shinyApp(ui = ui, server =  server)
+```
+
+

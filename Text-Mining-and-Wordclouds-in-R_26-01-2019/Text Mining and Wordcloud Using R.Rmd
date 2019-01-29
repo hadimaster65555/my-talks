@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### Catatan
 
-- Beberapa hasil yang diperoleh dibawah ini menggunakan R versi 3.5.2 dengan OS Linux LXLE 16.04, jika terjadi perubahan hasil ketika melakukan eksekusi kemungkinan besar diakibatkan karena sistem atau perbedaan versi R 
+- Beberapa hasil yang diperoleh dibawah ini menggunakan R versi 3.5.2 dan RStudio versi 1.1.456 dengan OS Linux LXLE 16.04, jika terjadi perubahan hasil ketika melakukan eksekusi kemungkinan besar diakibatkan karena sistem atau perbedaan versi R 
 
 # Instalasi Library
 *Install* beberapa library berikut jika belum ada:

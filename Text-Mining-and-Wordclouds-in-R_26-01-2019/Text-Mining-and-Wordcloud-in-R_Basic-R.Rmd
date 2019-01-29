@@ -1,0 +1,135 @@
+---
+title: "Text Mining and Wordcloud in R - R Basic"
+author: "Raden Muhammad Hadi"
+date: "27 Januari 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Operasi Aritmatika Dasar di R
+
+```{r}
+cat("# Penjumlahan \n")
+4+5
+cat("# Pengurangan \n")
+5-1
+cat("# Perkalian \n")
+10*3
+cat("# Pembagian \n")
+9/3
+```
+
+## Operasi Vektor Dasar di R
+
+```{r}
+cat("# Membuat vektor di R \n")
+cat("## Dengan fungsi combine c() \n")
+c(1,2,3,4)
+cat("## Dengan operator : untuk vektor barisan \n")
+1:10
+
+cat("Memasukkan vektor kedalam variabel \n")
+vektor <- c(1,3,4,5,5)
+
+cat("# Memanggil elemen vektor \n")
+cat("## Memanggil elemen vektor ke 3 \n")
+vektor[3]
+cat("## Memanggil elemen vektor dari 1 sampai 3 \n")
+vektor[1:3]
+cat("Memanggil elemen vektor ke 1,3 dan 5 \n")
+vektor[c(1,3,5)]
+
+cat("# Mengganti elemen vektor ke 5 dengan nilai 10 \n")
+vektor[5] = 10
+vektor
+
+cat("# Melihat panjang vektor \n")
+length(vektor)
+
+cat("## Menambah elemen vektor ke 6 dengan nilai 11 \n")
+vektor[6] <-  11
+
+cat("# Melihat kembali isi vektor \n")
+vektor
+```
+
+# Operasi Matriks di R
+
+```{r}
+cat("# Membuat matriks ukuran 3 x 3 dengan semua elemen berisi 0 \n")
+matrix(data = 0, nrow = 3, ncol = 3)
+cat("# Membuat matriks ukuran 3 x 3 dengan elemen dari 1 sampai 9 columnwise \n")
+matrix(data = 1:9, nrow = 3, ncol = 3)
+cat("# Membuat matriks ukuran 3 x 3 dengan elemen dari 1 sampai 9 rowwise \n")
+matrix(data = 1:9, nrow = 3, ncol = 3, byrow = T)
+
+cat("# Memasukkan matriks kedalam variabel \n")
+matriks <- matrix(1:9,3,3)
+matriks
+cat("# Mengambil baris ke 1 dari matriks \n")
+matriks[1,]
+cat("# Mengambil kolom ke 3 dari matriks \n")
+matriks[,3]
+cat("# Mengambil elemen baris 2 kolom 3 dari matriks \n")
+matriks[2,3]
+
+cat("# Mengganti elemen baris 2 kolom 3 dengan nilai 10 \n")
+matriks[2,3] <-  10
+cat("# Melihat kembali isi matriks \n")
+matriks
+```
+
+# Operasi Dataframe di R
+
+```{r}
+cat("# Membuat dataframe dengan fungsi data.frame() \n")
+data.frame(namaKolom1 = c(1,2,3,4,5), namaKolom2 = c("a","b","c","d","e"))
+
+cat("# Memasukkan dataframe kedalam variabel \n")
+df <- data.frame(nama = c("hadi","master"), umur = c(17,20))
+cat("# Melihat isi dataframe")
+df
+
+cat("# Mengambil baris ke-1 dari dataframe \n")
+df[1,]
+
+cat("# Mengambil kolom ke-2 dari dataframe \n")
+df[,2]
+
+cat("# Mengambil elemen baris ke-1 dan kolom ke-2 dari dataframe \n")
+df[1,2]
+
+cat("# Mengganti elemen baris ke-1 dan kolom ke-2 dengan nilai 40 \n")
+df[1,2] <- 40
+
+cat("# Melihat kembali isi dataframe \n")
+df
+
+cat("# Mengambil nilai kolom dengan operator $ \n")
+df$nama
+
+df$umur
+```
+
+# Operasi List di R
+
+```{r}
+cat("# Membuat list \n")
+list(daftar1 = c(1,2,3), daftar2 = "hadi")
+
+cat("# Memasukkan list dalam variabel \n")
+daftar <- list(daftar1 = c(1,2,3), daftar2 = "hadi")
+
+cat("# Mengambil masing-masing daftar menggunakan indeks \n")
+cat("# Daftar 1 \n")
+daftar[[1]]
+cat("# Daftar 2 \n")
+daftar[[2]]
+
+cat("# Mengambil daftar menggunakan operator $ \n")
+daftar$daftar1
+```
+

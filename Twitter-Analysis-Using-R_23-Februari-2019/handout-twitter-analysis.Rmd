@@ -1,0 +1,532 @@
+---
+title: "Twitter Analysis Menggunakan R - Studi Kasus Twitter Para Capres 2019"
+subtitle: "Hand-on Time"
+author: "Raden Muhammad Hadi"
+date: "`r Sys.Date()`"
+output:
+  tufte::tufte_html: default
+  tufte::tufte_handout:
+    citation_package: natbib
+    latex_engine: pdflatex
+  tufte::tufte_book:
+    citation_package: natbib
+    latex_engine: pdflatex
+bibliography: skeleton.bib
+link-citations: yes
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+library(tufte)
+# invalidate cache when the tufte version changes
+knitr::opts_chunk$set(tidy = FALSE, cache.extra = packageVersion('tufte'))
+options(htmltools.dir.version = FALSE)
+```
+
+*Catatan*:
+
+- Semua bagian di dalam teks *handout* ini dilakukan setelah membuat access token ke API twitter, jika belum silahkan baca *file powerpoint* yang diberikan
+- Semua program dibawah ini dijalankan pada R versi 3.5.2, RStudio 1.1.456 dan pada sistem Operasi Linux 16.04 dan Windows 7. Jika ada perbedaan pada hasil yang diperoleh atau terdapat *error* ketika dijalankan mungkin dikarenakan perbedaan versi pada R maupun pada OS.
+
+## Mempersiapkan Package
+
+Pertama, *install* beberapa *package* berikut:
+
+```{r installasi package, eval=FALSE}
+install.packages("tidyverse") # Data Science Tool
+install.packages("tidytext") # Untuk Text Mining dan Preprocessing
+install.packages("rtweet") # Untuk akses ke Twitter API
+install.packages("wordcloud2") # Untuk membuat wordcloud
+install.packages("graphTweets") # Untuk membuat objek graph/network 
+install.packages("sigmajs") # Untuk memvisualisasikan graph/network
+```
+
+Setelah itu, panggil semua *package* dengan fungsi ```library(nama_package)```:
+
+```{r menggunakan package}
+library(tidyverse) # Data Science Tool
+library(tidytext) # Untuk Text Mining dan Preprocessing
+library(rtweet) # Untuk akses ke Twitter API
+library(wordcloud2) # Untuk membuat wordcloud
+library(graphTweets) # Untuk membuat objek graph/network 
+library(sigmajs) # Untuk memvisualisasikan graph/network
+```
+
+## Menggunakan access token untuk menggunakan Twitter API
+
+Agar bisa mengakses API Twitter, kita perlu membuat *access token* yang sudah diperoleh melalui [https://developer.twitter.com](https://developer.twitter.com) menggunakan fungsi ```create_token()``` dari *library* ```rtweet``` ^[Untuk mengetahui fungsionalitas dan penggunaan lainnya dari ```rtweet``` bisa melihat dokumentasi pada https://rtweet.info/.] seperti berikut:
+
+```{r membuat token, eval=FALSE}
+create_token(app = "masukkan nama aplikasi",
+             consumer_key = "masukkan consumer key",
+             consumer_secret = "masukkan consumer secret",
+             access_token = "masukkan access token",
+             access_secret = "masukkan access secret")
+```
+
+Jalankan perintah diatas melalui *console* maupun *R script* sehingga muncul *output* berikut:
+
+![Keluaran fungsi ```create_token()```](img/twitter-api.png)
+
+Setelah itu kita siap untuk melakukan *scrapping* data Twitter.
+
+## Melihat Trending Topics Berdasarkan Negara
+
+Kita bisa melihat berbagai daerah yang bisa dicari topiknya dengan menggunakan fungsi ```trends_avalible()```:
+
+```{r}
+# Cari tren yang bisa diakses 
+trends_available()
+```
+
+Kita bisa melihat *trending topics* saat ini menggunakan fungsi ```get_trends("nama negara/daerah")```:
+
+```{r mendapat trending 1}
+# Dapatkan trending topics dari 'Indonesia'
+get_trends("indonesia")
+```
+
+Kita bisa menyimpan hasilnya ke dalam sebuah variabel untuk analisis lebih lanjut, misalnya ke dalam variabel ```trending_indo```:
+
+```{r mendapat trending 2}
+# Memasukkan nilai dari fungsi get_trends ke variabel trending_indo
+trending_indo <- get_trends("indonesia") 
+
+# memanggil trending_indo
+trending_indo
+```
+
+Kita bisa melihat berbagai fitur yang terdapat dalam variabel tersebut dengan menggunakan fungsi ```glimpse()``` dari *library* ```dplyr``` dan *pipe operator* %>%  dari *library* ```magrittr```^[```dplyr``` dan ```magritrr``` adalah bagian dari satu *library* besar yaitu ```tidyverse``` yang bisa dipelajari lebih lanjut melalui https://www.tidyverse.org/]:
+
+```{r}
+# Dari trending_indo
+trending_indo %>% 
+  # Lihat struktur data keseluruhan
+  glimpse()
+```
+
+Penjelasan sebagian isi kolom:
+
+- Kolom ```trend``` berisi tren yang saat ini ada/muncul di daerah Indonesia
+- Kolom ```url``` berisi alamat *url* terkait *trending topics* yang dilihat
+- Kolom ```tweet_volume``` berisis jumlah banyaknya topik/*hashtag* tersebut digunakan oleh pengguna twitter
+- Kolom ```place``` dan ```woeid``` adalah negara dan id negara dimana *trending topics* diperoleh
+- Kolom ```created_at``` adalah waktu kapan *trending topics* tersebut muncul
+
+Kita bisa memilih beberapa variabel diatas dengan menggunakan fungsi ```select(nama_kolom)```:
+
+```{r}
+# Dari trending_indo
+trending_indo %>% 
+  # pilih kolom trend dan kolom tweet_volume
+  select(trend, tweet_volume)
+```
+
+Hasil yang dikeluarkan di *console* cenderung lebih ringkas karena struktur data yang digunakan adalah *tible*, sehingga keluaran yang diperlihatkan paling banyak hanya 10 baris. Kita bisa mengatur banyak keluaran yang ingin dimunculkan pada *console* dengan menggunakan fungsi ```print(n = banyak_keluaran)```:
+
+```{r}
+# Dari trending_indo
+trending_indo %>% 
+  # pilih kolom trend dan kolom tweet_volume
+  select(trend, tweet_volume) %>% 
+  # perlihatkan sebanyak 100 baris
+  print(n = 100)
+```
+
+Dapat dilihat bahwa ternyata terdapat beberapa ```trend``` yang tidak memiliki ```tweet_volume``` atau bernilai NA. Kita bisa mengeliminasi nilai NA dengan menggunakan fungsi ```filter()```:
+
+```{r}
+# Dari trending_indo
+trending_indo %>% 
+  # pilih kolom trend dan kolom tweet_volume
+  select(trend, tweet_volume) %>% 
+  # filter kolom tweet_volume dimana nilainya tidak boleh 'NA'
+  filter(tweet_volume != "NA")
+```
+
+Jika dilihat, nilai NA sudah tidak ada lagi. Selanjutnya kita ingin melihat tren mana yang memiliki volume terbesar dengan menggunakan fungsi ```arrange()``` dan menggunakan fungsi ```desc()``` untuk mengurutkan data berdasarkan kolom tertentu:
+
+```{r}
+# Dari trending_indo
+trending_indo %>% 
+  # pilih kolom trend dan kolom tweet_volume
+  select(trend, tweet_volume) %>% 
+  # filter kolom tweet_volume dimana nilainya tidak boleh 'NA'
+  filter(tweet_volume != "NA") %>% 
+  # disusun berdasarkan tweet_volume secara descending
+  arrange(desc(tweet_volume))
+```
+
+Selanjutnya, kita bisa membuat wordcloud dengan menggunakan fungsi ```wordcloud()``` dari *library* ```wordcloud2```^[dokumentasi terkait wordcloud2 beserta contohnya dapat dilihat pada [*link* berikut](https://cran.r-project.org/web/packages/wordcloud2/vignettes/wordcloud.html) atau bisa mengunjungi [*r-graph gallery*](https://www.r-graph-gallery.com/the-wordcloud2-library/).]:
+
+```{r}
+# Dari trending_indo
+trending_indo %>% 
+  # pilih kolom trend dan kolom tweet_volume
+  select(trend, tweet_volume) %>% 
+  # filter kolom tweet_volume dimana nilainya tidak boleh 'NA'
+  filter(tweet_volume != "NA") %>% 
+  # disusun berdasarkan tweet_volume secara descending
+  arrange(desc(tweet_volume)) %>% 
+  # buat wordcloud dengan ukuran huruf 2
+  wordcloud2(size = 2)
+```
+
+## Analisa Tweet Berdasarkan Hashtag, Mention atau Keyword
+
+Kita bisa melakukan pencarian untuk topik tertentu berdasarkan hashtag, mention maupun kata kunci apapun menggunakan fungsi ```search_tweet```. Sebagai contoh saya mencari hashtag **#rstats**:
+
+```{r}
+# Cari tweet dengan hashtag #rstats sebanyak 100 lalu masukkan ke variabel 'hasil_pencarian'
+hasil_pencarian <- search_tweets(q = "#rstats", n = 100)
+
+# perlihatkan nilai dari hasil_pencarian
+hasil_pencarian
+```
+
+Kita bisa melihat struktur data dari ```hasil_pencarian``` dengan menggunakan ```glimpse()```:
+
+```{r}
+# Dari variabel hasil_pencarian
+hasil_pencarian %>% 
+  # perlihatkan struktur data
+  glimpse()
+```
+
+Untuk sekali pemanggilan, terdapat 88 variabel dengan diantaranya:
+
+- ```user_id``` (tipe data: ```character```) merupakan ID dari pengguna Twitter
+- ```status_id``` (tipe data: ```character```) merupakan ID dari status pengguna
+- ```created_at``` (tipe data: ```date-time```) merupakan informasi terkait kapan status tersebut dibuat
+- ```screen_name``` (tipe data: ```character```) merupakan nama dari pengguna Twitter
+- ```text``` (tipe data: ```character```) merupakan status/*tweet* dari pengguna Twitter berdasarkan user tertentu
+- ```display_text_width``` (tipe data: ```double```) merupakan panjang kata dari *tweet* yang dikirimkan
+- ```mentions_screen_name``` (tipe data: ```list```) merupakan nama dari user yang di-*mention* pada teks
+- ```profile_image_url``` (tipe data: ```character```) merupakan *link* dari profil pengguna
+
+Kita juga bisa melakukan pencarian dengan menggunakan kata kunci (*keyword*), misalnya kata 'politik' dengan tweet berbahasa indonesia sebanyak 3200:
+
+```{r}
+# Cari tweet dengan kata kunci 'politik' sebanyak 3200 tweet lalu masukkan ke variabel 'hasil_pencarian2' dengan bahasa yang dipakai adalah bahasa indonesia
+hasil_pencarian2 <- search_tweets(q = "politik", n = 3200, lang = "id")
+
+# perlihatkan nilai dari hasil_pencarian2
+hasil_pencarian2
+```
+
+*Catatan*:
+Terkadang *tweet* yang diperoleh tidak selalu sama dengan jumlah maksimal, jika ingin mengambil lebih dari 3200 maka harus menggunakan parameter ```retryonratelimit = TRUE```.
+
+Selanjutnya kita juga dapat melihat frekuensi *keyword* tersebut digunakan menggunakan fungsi ```ts_plot()```:
+
+```{r}
+# Dari hasil pencarian
+hasil_pencarian2 %>% 
+  # buatkan grafik time-series frekuensi kata kunci tersebut 
+  # dipakai dalam tweet per menit
+  ts_plot(by = "minutes")
+```
+
+Kita bisa mengganti nilai dari parameter ```by``` dengan ```seconds```, ```minutes```, ```hours```, ```days```, ```weeks```, bahkan dengan keterangan waktu semisal ```3 seconds```, ```3 days``` dan lainnya.
+
+Sepertinya hasil plot kurang menarik. Kita bisa menambahkan judul dan memperbaiki tema dari grafiknya dengan menggunakan beberapa fungsi dari ```ggplot2```^[Dokumentasi terkait ```ggplot2``` dapat dilihat pada situs https://ggplot2.tidyverse.org/.] seperti berikut:
+
+```{r}
+# Dari hasil pencarian
+hasil_pencarian2 %>% 
+  # buatkan grafik time-series frekuensi 
+  # kata kunci tersebut dipakai dalam 
+  # tweet per menit
+  ts_plot(by = "minutes") +
+  # Menggunakan theme_minimal
+  theme_minimal() +
+  # Memberikan judul plot dengan 
+  # elemen teks tebal (bold)
+  theme(plot.title = element_text(face = "bold")) +
+  # Menambahkan beberapa elemen
+  labs(
+    # Berikan label untuk x
+    x = "waktu dalam menit",
+    # Berikan label untuk y
+    y = "frekuensi",
+    # Berikan judul
+    title = "Frekuensi Tweet dengan kata Kunci 'Politik'",
+    # Memberi sub-judul
+    subtitle = "per menit",
+    # Memberi caption
+    caption = paste0("Sumber: Twitter, tanggal: ", Sys.Date())
+  )
+```
+
+Selanjutnya kita akan melihat semua *tweet* tersebut dengan melihat variabel ```text```:
+
+```{r}
+# Dari hasil_pencarian2
+hasil_pencarian2 %>% 
+  # Pilih kolom teks
+  select(text)
+```
+
+Jika dilihat, terdapat beberapa teks yang mengandung *hashtag* (#), *link*, *mention* (@) dan kadangkala terdapat teks yang memuat *emoticon*. Hal ini bisa dibersihkan dengan menggunakan fungsi ```mutate```, ```gsub()``` dan ```plain_tweets()```:
+
+```{r}
+# Dari hasil_pencarian2
+hasil_pencarian2 %>% 
+  # Pilih kolom text
+  select(text) %>% 
+  # Ubah elemen pada kolom text dengan mengganti
+  # semua link dengan karakter kosong
+  mutate(text = gsub(pattern = "http\\S+", 
+                     replacement = "", 
+                     x = text)) %>% 
+  # Ubah elemen pada kolom text dengan mengganti 
+  # semua hashtag dengan karakter kosong
+  mutate(text = gsub(pattern = "#", 
+                     replacement = "", 
+                     x = text)) %>% 
+  # Ubah elemen pada kolom text dengan mengganti 
+  # semua mention dengan karakter kosong
+  mutate(text = gsub(pattern = "@", 
+                     replacement = "", 
+                     x = text)) %>% 
+  # Bersihkan karakter lainnya (contoh: emoticon) 
+  # lalu simpan ke dalam variabel text_cleaned
+  plain_tweets() -> text_cleaned
+```
+
+**Catatan**:
+
+- Ada 3 jenis operator *assignment* di R, yaitu ```<-```, ```=```, dan ```->```. Operator ```<-``` dan ```=``` memiliki fungsi yang sama yaitu memasukkan nilai dari sebelah kanan operator ke variabel (contoh: ```nilai <- 3``` atau ```nilai = 3```), sedangkan ```->``` memasukkan nilai dari sebelah kiri operator ke variabel (contoh: ```3 -> nilai```)
+
+Selanjutnya kita akan melihat wordcloud dari teks yang sudah dibersihkan dengan memotongnya menjadi per kata dengan fungsi ```unnest_tokens()``` dan menghitung frekuensu huruf dengan fungsi ```count()```^[fungsi ```unnest_tokens()``` dan ```count()``` adalah bagian dari ```tidytext```. Referensi terkait ```tidytext``` dapat melihat situs https://www.tidytextmining.com/.]:
+
+```{r}
+# Dari variabel text_cleaned
+text_cleaned %>%   
+  # tokenize setiap kalimat menjadi per kata
+  unnest_tokens(input = text, output = token) %>% 
+  # hitung frekuensi semua huruf lalu urutkan 
+  # dari yang paling besar frekuensinya
+  count(token, sort = T)
+```
+
+Jika diperhatikan, terdapat kata-kata seperti kata 'ini', 'di', 'dari', 'itu' dan kata-kata lainnya yang tidak memiliki makna atau memuat topik tertentu di dalam sebuah teks, kata-kata ini biasa disebut sebagai *stopwords*. *Stopwords* dapat dihilangkan dengan mudah selama kita memiliki korpus^[Korpus (*corpus*) adalah koleksi teks yang besar dan terstruktur. Biasanya digunakan untuk analisa statistik dan pengujian hipotesis] terkait *stopwords*. Korpus ini bisa kita buat sendiri atau menggunakan yang sudah ada seperti yang bisa diperoleh dari [github masdevid berikut](https://raw.githubusercontent.com/masdevid/ID-Stopwords/master/id.stopwords.02.01.2016.txt) dengan menyalin *link* github tersebut lalu masukkan ke dalam fungsi ```read_csv()``` agar korpus tersebut bisa diambil:
+
+```{r }
+# Ambil stopwords dari link, beri nama kolomnya 'stopwords'
+# hasilnya disimpan ke dalam variabel 'stopword_indo'
+stopword_indo <- read_csv("https://raw.githubusercontent.com/masdevid/ID-Stopwords/master/id.stopwords.02.01.2016.txt", 
+                          col_names = "stopwords")
+
+# Melihat sebagian isi dari stopword_indo
+stopword_indo
+```
+
+Selanjutnya kita akan membuang semua *stopwords* pada teks dengan menggunakan fungsi ```anti_join()```:
+
+```{r}
+# Dari variabel text_cleaned
+text_cleaned %>% 
+  # tokenize setiap kalimat menjadi per kata
+  unnest_tokens(input = text, output = token) %>% 
+  # buang setiap stopword yang ada pada kolom 
+  # token jika terdapat kata yang sama dengan 
+  # yang ada pada variabel stopword_indo
+  anti_join(stopword_indo, by = c("token" = "stopwords"))
+```
+
+Dapat dilihat bahwa beberapa *stopwords* sudah dihilangkan walaupun masih terdapat kata seperti 'yg', 'ya', 'nih' dan kata-kata lainnya yang harusnya tidak perlu ada. Hal ini bisa diantisipasi dengan melengkapi korpus yang sudah ada. Misalnya menyimpan korpus tersebut ke dalam *file* CSV lalu melengkapi korpusnya melalui Excel atau program *spreadsheet* lainnya yang lebih mudah digunakan.
+
+Selanjutnya kita akan mencoba membuat wordcloud dari teks yang sudah dibersihkan dari *stopwords*:
+
+```{r}
+# Dari variabel text_cleaned
+text_cleaned %>% 
+  # tokenize setiap kalimat menjadi per kata
+  unnest_tokens(input = text, output = token) %>% 
+  # buang setiap stopword yang ada pada kolom 
+  # token jika terdapat kata yang sama dengan 
+  # yang ada pada variabel stopword_indo
+  anti_join(stopword_indo, by = c("token" = "stopwords")) %>% 
+  # Hitung frekuensi huruf lalu urutkan dari yang terbesar
+  count(token, sort = T) %>% 
+  # visualisasikan dalam bentuk wordcloud
+  wordcloud2(size = 1)
+```
+
+## Analisa Jaringan
+
+Masih dengan menggunakan variabel ```hasil_pencarian2```, kita akan mencoba untuk membuat visualisasi sederhana terkait kata kunci 'politik'. Untuk membangun sebuah graf, hal yang perlu dilakukan adalah menyusun data yang terdiri dari sumber (*source*), tujuan (*target*) dan nilai bobot antara sumber dan tujuan. Hal ini bisa dibantu dengan menggunakan fungsi dari *library* ```graphTweets``` dan visualisasinya bisa dibantu dengan *library* ```sigmajs```^[Untuk mengetahui lebih lanjut fungsi-fungsi pada kedua *library* ini silahkan kunjungi dokumentasi untuk ```graphTweets``` http://graphtweets.john-coene.com/ dan dokumentasi untuk ```sigmajs```http://sigmajs.john-coene.com/.]:
+
+```{r}
+# Dari hasil_pencarian2
+hasil_pencarian2 %>% 
+  # Buat edge dari screen_name dan mentions_screen_name
+  gt_edges(screen_name, mentions_screen_name) %>% 
+  # buat node
+  gt_nodes() %>%
+  # gabungkan hasilnya menjadi satu lalu masukkan 
+  # ke variabel jaringan_sosial
+  gt_collect() -> jaringan_sosial
+
+# Dari jaringan_sosial dan variabel nodes
+nodes <- jaringan_sosial$nodes %>%
+  # buat variabel baru terdiri dari
+  mutate(
+    # id dengan nilai sama dengan kolom nodes
+    id = nodes,
+    # label dengan nilai sama dengan kolom nodes
+    label = nodes,
+    # dengan ukuran sentralitas n
+    size = n
+    ) 
+
+# Dari jaringan sosial dan variabel edges
+edges <- jaringan_sosial$edges %>% 
+  # buat variabel baru terdiri dari
+  mutate(
+    # id dengan nilai terurut dari 1 sampai n
+    id = 1:n()
+  )
+
+# Dengan menggunakan sigmajs
+sigmajs() %>% 
+  # inisiasi graf
+  sg_force_start() %>% 
+  # inisiasi nodes
+  sg_nodes(nodes, id, label, size) %>%
+  # inisiasi edges
+  sg_edges(edges, id, source, target) %>%
+  # beri layout pada graf
+  sg_layout() %>% 
+  # tentukan cluster pada graf
+  sg_cluster() %>% 
+  # hentikan animasi
+  sg_force_stop(10000)
+```
+
+Dapat dilihat dari grafik bahwa terdapat beberapa titik yang memiliki ukuran paling besar. Hal ini dikarenakan titik tersebut memiliki sentralitas tinggi, artinya titik tersebut terhubung dengan banyak titik lainnya. Bisa diartikan bahwa titik tersebut memiliki pengaruh sangat besar dan merupakan pusat dari kelompok tertentu. Namun perlu diperhatikan juga bahwa graf yang dibuat tidak memiliki arah jadi tidak diketahui siapa mempengaruhi siapa^[Untuk mempelajari hal-hal terkait analisa jaringan (*Network Analysis*) dapat mengunjungi referensi http://rpubs.com/wctucker/302110 dan http://sachaepskamp.com/files/Cookbook.html atau [membaca buku karya David Easley dan Jon Kleinberg yang berjudul *Networks, Crowds*, and Markets](https://www.cs.cornell.edu/home/kleinber/networks-book/networks-book.pdf).].
+
+# Materi Tambahan
+
+## Streaming Twitter Secara Realtime
+
+Kita bisa melakukan *scraping* Twitter secara *real-time* dengan menggunakan fungsi ```stream_tweets()```:
+
+```{r}
+# Lakukan scrape secara streaming
+stream_tweets(
+  # untuk keyword politik
+  q = "politik",
+  # selama 120 detik
+  timeout = 120,
+  # simpan kedalam file bernama 'hasil_streaming.json'
+  file_name = "hasil_streaming.json",
+  # jangan di-parsing untuk menghemat resource
+  parse = FALSE)
+```
+
+Kita bisa membaca hasil yang disimpan menggunakan ```parse_stream()```:
+
+```{r}
+# Lakukan parsing pada 
+parse_stream("hasil_streaming.json")
+```
+
+## Studi Kasus: Analisa Sederhana Twitter Kedua Capres 2019
+
+Kita bisa melakukan *scrape* terhadap *timeline* seseorang dengan menggunakan ```get_timeline()```. Untuk ini kita akan melakukan *scraping* pada dua pasangan capres: Joko Widodo(jokowi) dan Prabowo Subianto(prabowo):
+
+**Timeline Joko Widodo**
+
+```{r}
+# lihat timeline jokowi dan ambil tweet sebanyak 10000
+# atau sebanyak-banyaknya
+timeline_jokowi <- get_timeline(user = "jokowi", n = 10000)
+
+# lihat isi dari timeline_jokowi
+timeline_jokowi
+```
+
+**Timeline Prabowo Subianto**
+
+```{r}
+# lihat timeline jokowi dan ambil tweet sebanyak 10000
+# atau sebanyak-banyaknya
+timeline_prabowo <- get_timeline(user = "prabowo", n = 10000)
+
+# lihat isi dari timeline_jokowi
+timeline_prabowo
+
+```
+
+Selanjutnya kita akan menganalisa frekuensi *tweet* per minggunya:
+
+**Frekuensi Tweet Joko Widodo Per Minggu**
+
+```{r}
+timeline_jokowi %>% 
+  ts_plot("weeks") + 
+  theme_light() +
+  labs(
+    x = "waktu dalam minggu",
+    y = "frekuensi tweets",
+    title = "Frekuensi Jumlah Tweet Joko Widodo",
+    subtitle = "dihitung per minggu",
+    caption = paste0("Sumber: Twitter, tanggal: ", Sys.Date())
+  )
+```
+
+**Frekuensi Tweet Prabowo Subianto Per Minggu**
+
+```{r}
+timeline_prabowo %>% 
+  ts_plot("weeks") + 
+  theme_light() +
+  labs(
+    x = "waktu dalam minggu",
+    y = "frekuensi tweets",
+    title = "Frekuensi Jumlah Tweet Prabowo Subianto",
+    subtitle = "dihitung per minggu",
+    caption = paste0("Sumber: Twitter, tanggal: ", Sys.Date())
+  )
+```
+
+Selanjutnya kita akan mencari tahu seberapa banyak pengikut (*follower*) dari masing-masing capres dengan menggunakan fungsi ```lookup_users()``` lalu memplot hasilnya menggunakan ```ggplot2```:
+
+```{r}
+# Ambil informasi jokowi
+bio_jokowi <- lookup_users("jokowi")
+# Ambil informasi prabowo
+bio_prabowo <- lookup_users("prabowo")
+
+# Buat vektor jumlah_follower
+jumlah_follower <- c(bio_jokowi$followers_count, bio_prabowo$followers_count)
+# Buat vektor nama_kandidat
+nama_kandidat <- c("Joko Widodo", "Prabowo Subianto")
+
+data_frame(nama_kandidat, jumlah_follower) %>% 
+  ggplot(aes(x = nama_kandidat, 
+             y = jumlah_follower, 
+             fill = nama_kandidat)) +
+  geom_col() +
+  geom_text(aes(label = format(jumlah_follower, 
+                               big.mark = ",")), 
+            vjust = 1.6, color = "white") +
+  theme_minimal() +
+  labs(
+    x = "Nama Kandidat",
+    y = "Jumlah Follower",
+    title = "Jumlah Follower Masing-Masing Capres",
+    subtitle = paste0("Terhitung, ", Sys.Date()),
+    caption = "Sumber: Twitter") + 
+  theme(legend.title = element_blank(),legend.position = "none")
+```
+
+
+
+```{r bib, include=FALSE}
+# create a bib file for the R packages used in this document
+knitr::write_bib(c('base', 'rmarkdown'), file = 'skeleton.bib')
+```

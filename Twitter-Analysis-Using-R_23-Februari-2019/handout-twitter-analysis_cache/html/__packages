@@ -1,0 +1,16 @@
+base
+tufte
+tidyverse
+ggplot2
+tibble
+tidyr
+readr
+purrr
+dplyr
+stringr
+forcats
+tidytext
+rtweet
+wordcloud2
+graphTweets
+sigmajs

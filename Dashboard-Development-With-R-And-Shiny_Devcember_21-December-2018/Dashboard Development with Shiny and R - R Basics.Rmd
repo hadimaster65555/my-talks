@@ -2,8 +2,10 @@
 title: "Dashboard Development with Shiny and R - R Basics"
 author: "Raden Muhammad Hadi"
 date: "December 20, 2018"
-output: html_document
-editor_options: 
+output:
+  pdf_document: default
+  html_document: default
+editor_options:
   chunk_output_type: inline
 ---
 

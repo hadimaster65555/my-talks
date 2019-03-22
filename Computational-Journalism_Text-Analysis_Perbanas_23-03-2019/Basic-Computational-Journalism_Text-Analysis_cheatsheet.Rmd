@@ -1,0 +1,231 @@
+---
+title: "Basic Computational Journalism - Text Analysis"
+author: "Raden Muhammad Hadi"
+date: "`r Sys.Date()`"
+output:
+  tufte::tufte_html: default
+  tufte::tufte_handout:
+    citation_package: natbib
+    latex_engine: xelatex
+  tufte::tufte_book:
+    citation_package: natbib
+    latex_engine: xelatex
+bibliography: skeleton.bib
+link-citations: yes
+---
+
+```{r setup, include=FALSE}
+library(tufte)
+# invalidate cache when the tufte version changes
+knitr::opts_chunk$set(tidy = FALSE, cache.extra = packageVersion('tufte'))
+options(htmltools.dir.version = FALSE)
+```
+
+# Mining Data From Webpage
+
+## Mengambil judul berita
+
+Berikut adalah script dasar untuk ekstrak teks dari suatu halaman html:
+
+```{r, eval=FALSE}
+# Dari halaman web
+read_html("alamat_link") %>% 
+  # ekstrak data dari 1 node berdasarkan css selector
+  html_node(css = "css_selector") %>% 
+  # ekstrak teks dari node tersebut lalu bersihkan
+  html_text(trim = T)
+```
+
+## Contoh: Mengambil Judul Berita
+
+```{r eval=FALSE}
+read_html("https://money.kompas.com/read/2019/03/22/152039326/inflasi-rendah-gejolak-global-mereda-kok-suku-bunga-acuan-bi-tidak-turun") %>% 
+  html_node(css = ".read__title") %>% 
+  html_text()
+```
+
+## Contoh: Mengambil Teks Berita
+
+```{r eval=FALSE}
+# Dari link
+read_html("https://money.kompas.com/read/2019/03/22/152039326/inflasi-rendah-gejolak-global-mereda-kok-suku-bunga-acuan-bi-tidak-turun") %>% 
+  # baca semua nodes berdasarkan css selector
+  html_nodes(css = ".read__content p") %>% 
+  # ambil teks lalu bersihkan spasi
+  html_text(trim = T)
+```
+
+```{r eval=FALSE}
+# Dari link yang diberikan
+read_html("https://money.kompas.com/read/2019/03/22/152039326/inflasi-rendah-gejolak-global-mereda-kok-suku-bunga-acuan-bi-tidak-turun") %>%
+  # Ambil semua node berdasarkan css selector tertentu
+  html_nodes(css = ".read__content p") %>% 
+  # ekstrak teks dari node tersebut lalu bersihkan spasi
+  html_text(trim = T) %>% 
+  # gabung semua vektor menjadi 1 dipisah dengan garis baru
+  paste0(collapse = "\n")
+```
+
+## Contoh: Mengambil judul dan paragraf lalu simpan dalam teks
+
+```{r eval=FALSE}
+# masukkan link ke alamat_link
+alamat_link <- "https://money.kompas.com/read/2019/03/22/152039326/inflasi-rendah-gejolak-global-mereda-kok-suku-bunga-acuan-bi-tidak-turun"
+
+# masukkan hasilnya ke judul_berita
+judul_berita <- 
+  # Dari alamat link yang diberikan
+  alamat_link %>%
+  # Setelah dibaca html nya
+  read_html() %>%
+  # Dari node dengan kelas 'read__title'
+  html_node(css = ".read__title") %>%
+  # Diambil teks nya setelah dibersihkan dari spasi
+  html_text(trim = T)
+
+
+# Masukkan hasilnya ke isi_berita
+isi_berita <- 
+  # dari alamat link yang diberikan
+  alamat_link %>%
+  # baca html nya
+  read_html() %>%
+  # Dari semua node berdasarkan kelas '.read__content' lalu tag 'p'
+  html_nodes(css = ".read__content p") %>% 
+  # Diambil teks nya lalu bersihkan spasi
+  html_text(trim = T) %>% 
+  # Setelah teks nya digabung semua vektor menjadi 1 dipisah dengan garis baru
+  paste0(collapse = "\n")
+
+# Buat dataframe untuk menyimpan berita
+data_berita <- data_frame(judul = judul_berita, isi = isi_berita)
+```
+
+Kita dapat menjadikan semua perintah di atas menjadi fungsi seperti berikut:
+
+```{r eval=FALSE}
+ambil_berita <- function(link_berita) {
+  # masukkan hasilnya ke judul_berita
+judul_berita <- 
+  # Dari alamat link yang diberikan
+  link_berita %>%
+  # Setelah dibaca html nya
+  read_html() %>%
+  # Dari node dengan kelas 'read__title'
+  html_node(css = ".read__title") %>%
+  # Diambil teks nya setelah dibersihkan dari spasi
+  html_text(trim = T)
+
+
+# Masukkan hasilnya ke isi_berita
+isi_berita <- 
+  # dari alamat link yang diberikan
+  link_berita %>%
+  # baca html nya
+  read_html() %>%
+  # Dari semua node berdasarkan kelas '.read__content' lalu tag 'p'
+  html_nodes(css = ".read__content p") %>% 
+  # Diambil teks nya lalu bersihkan spasi
+  html_text(trim = T) %>% 
+  # Setelah teks nya digabung semua vektor menjadi 1 dipisah dengan garis baru
+  paste0(collapse = "\n")
+
+# Buat dataframe untuk menyimpan berita
+data_berita <- data_frame(judul = judul_berita, isi = isi_berita)
+}
+
+# Uji function yang dibuat
+berita_yang_diambil <- ambil_berita("https://money.kompas.com/read/2019/03/22/152039326/inflasi-rendah-gejolak-global-mereda-kok-suku-bunga-acuan-bi-tidak-turun")
+
+# lihat isi berita yang diambil
+berita_yang_diambil
+```
+
+Menyimpan berita kedalam format csv:
+
+```{r eval=FALSE}
+# Simpan kedalam format csv dengan separasi ';'
+write_csv2(x = berita_yang_diambil,
+           # masukkan kedalam direktori data dan beri nama
+           # 'artikel-berita.csv'
+           path = "data/berita_yang_diambil",
+           # gabung dengan data terbaru jika ada
+           append = T)
+```
+
+## Mengambil Link
+
+Mengambil satu link pada node tertentu:
+
+```{r eval=FALSE}
+# Masukkan alamat link ke variabel alamat_link
+alamat_link <- "https://money.kompas.com/"
+
+# Dari alamat_link
+alamat_link %>% 
+  # baca dokumen HTML nya
+  read_html() %>% 
+  # ambil nilai dari node dengan css selector kelas '.terkini__caption' lalu
+  # tag 'a'
+  html_nodes(css = ".terkini__caption a") %>% 
+  # ambil nilai pada atribut href
+  html_attr(name = "href")
+```
+
+Kita dapat mengubah semua perintah di atas menjadi fungsi seperti berikut:
+
+```{r eval=FALSE}
+ambil_link <- function(link_utama) {
+# masukkan hasilnya kedalam variabel 'link_yang_diambil'
+link_yang_diambil <- link_utama %>% 
+  # setelah baca dokumen HTML nya
+  read_html() %>% 
+  # ambil nilai dari node dengan css selector kelas '.terkini__caption'
+  # lalu tag 'a'
+  html_nodes(css = ".terkini__caption a") %>% 
+  # ambil nilai pada atribut href
+  html_attr(name = "href")
+}
+```
+
+Lalu gunakan fungsi tersebut untuk mengambil semua link yang ada pada halaman tersebut.
+
+```{r eval=FALSE}
+# Masukkan nilai dari fungsi ambil_link ke variabel daftar_link
+daftar_link <- ambil_link(alamat_link)
+
+# Melihat hasil yang diperoleh
+daftar_link
+```
+
+```{r eval=FALSE}
+# Buat dataframe kosong dengan nama variabel 'berita'
+berita <- tibble(judul = character(), isi = character())
+
+# inisiasi variabel 'iterasi' untuk perulangan
+iterasi <- 1
+
+# Buat berulangan 'for'
+for (link in daftar_link) { # Untuk setiap link dalam alamat_link
+  print(paste0("Download berita ke-", iterasi, collapse = ""))
+  print(paste0("link berita ", link, collapse = " "))
+  df <- ambil_berita(link) # Ambil berita dalam link lalu masukkan dalam df
+  berita <- bind_rows(berita, df) # masukkan dalam dataframe berita 
+  iterasi <- iterasi + 1
+}
+```
+
+simpan hasilnya kedalam file csv:
+
+```{r}
+write_csv2(x = berita, path = "data/berita_yang_diambil.csv")
+```
+
+# Pre-Processing
+
+## Tokenisasi
+
+```{r eval=FALSE}
+
+```
+

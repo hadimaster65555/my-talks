@@ -58,11 +58,11 @@ library(sigmajs) # Untuk memvisualisasikan graph/network
 Agar bisa mengakses API Twitter, kita perlu membuat *access token* yang sudah diperoleh melalui [https://developer.twitter.com](https://developer.twitter.com) menggunakan fungsi ```create_token()``` dari *library* ```rtweet``` ^[Untuk mengetahui fungsionalitas dan penggunaan lainnya dari ```rtweet``` bisa melihat dokumentasi pada https://rtweet.info/.] seperti berikut:
 
 ```{r membuat token, eval=FALSE}
-create_token(app = "masukkan nama aplikasi",
-             consumer_key = "masukkan consumer key",
-             consumer_secret = "masukkan consumer secret",
-             access_token = "masukkan access token",
-             access_secret = "masukkan access secret")
+create_token(app = "hadimaster-r-miner",
+             consumer_key = "abHTJszSiCxqQNtQDvhbMFN2L",
+             consumer_secret = "gu92uSQcGG4Bwtx5acILeMHJ5tDF5nPuZTDeUkbc34OloWEwFG",
+             access_token = "100412176-44aDgqAwvPyKwvGhqvjoEV63fJREd8fjnlnit1Qr",
+             access_secret = "MrYz851W7jNue4V5KIzevcPYZamDfeHlkzNTMG92Y6ZSD")
 ```
 
 Jalankan perintah diatas melalui *console* maupun *R script* sehingga muncul *output* berikut:

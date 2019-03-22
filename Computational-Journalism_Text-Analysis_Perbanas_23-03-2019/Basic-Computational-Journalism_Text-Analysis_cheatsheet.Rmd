@@ -217,7 +217,7 @@ for (link in daftar_link) { # Untuk setiap link dalam alamat_link
 
 simpan hasilnya kedalam file csv:
 
-```{r}
+```{r eval=FALSE}
 write_csv2(x = berita, path = "data/berita_yang_diambil.csv")
 ```
 

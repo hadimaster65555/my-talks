@@ -22,6 +22,7 @@ options(htmltools.dir.version = FALSE)
 ```
 
 # Instalasi dan memuat library
+
 ```{r eval=FALSE}
 install.packages("rvest")
 install.packages("tidyverse")
@@ -372,14 +373,14 @@ berita %>%
 
 ## Visualisasi Sentimen
 
-```{r}
+```{r eval=FALSE}
 sentimen_berita %>% 
   ggplot(aes(x = judul, y = total_sentimen)) +
   geom_col() + 
   coord_flip()
 ```
 
-```{r}
+```{r eval=FALSE}
 sentimen_berita %>% 
   mutate(status = ifelse(total_sentimen >= 0, "positif", "negatif")) %>% 
   ggplot(aes(x = judul, y = total_sentimen, fill = status)) +

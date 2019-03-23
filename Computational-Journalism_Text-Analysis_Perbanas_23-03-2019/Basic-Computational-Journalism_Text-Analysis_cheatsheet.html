@@ -12,7 +12,7 @@
 
 <meta name="author" content="Raden Muhammad Hadi" />
 
-<meta name="date" content="2019-03-22" />
+<meta name="date" content="2019-03-23" />
 
 <title>Basic Computational Journalism - Text Analysis</title>
 
@@ -50,10 +50,26 @@ if (window.hljs) {
 
 <h1 class="title toc-ignore">Basic Computational Journalism - Text Analysis</h1>
 <h4 class="author">Raden Muhammad Hadi</h4>
-<h4 class="date">2019-03-22</h4>
+<h4 class="date">2019-03-23</h4>
 
 
 
+<div id="instalasi-dan-memuat-library" class="section level1">
+<h1>Instalasi dan memuat library</h1>
+<pre class="r"><code>install.packages(&quot;rvest&quot;)
+install.packages(&quot;tidyverse&quot;)
+install.packages(&quot;tidytext&quot;)
+install.packages(&quot;hunspell&quot;)
+install.packages(&quot;textClean&quot;)
+install.packages(&quot;wordcloud2&quot;)
+
+library(rvest)
+library(tidyverse)
+library(tidytext)
+library(hunspell)
+library(textclean)
+library(wordcloud2)</code></pre>
+</div>
 <div id="mining-data-from-webpage" class="section level1">
 <h1>Mining Data From Webpage</h1>
 <div id="mengambil-judul-berita" class="section level2">
@@ -217,10 +233,118 @@ for (link in daftar_link) { # Untuk setiap link dalam alamat_link
 <pre class="r"><code>write_csv2(x = berita, path = &quot;data/berita_yang_diambil.csv&quot;)</code></pre>
 </div>
 </div>
-<div id="pre-processing" class="section level1">
-<h1>Pre-Processing</h1>
-<div id="tokenisasi" class="section level2">
-<h2>Tokenisasi</h2>
+<div id="basic-pre-processing" class="section level1">
+<h1>Basic Pre-Processing</h1>
+<div id="lowercasing-dan-tokenization" class="section level2">
+<h2>Lowercasing dan Tokenization</h2>
+<pre class="r"><code>berita %&gt;% 
+  select(isi) %&gt;% 
+  unnest_tokens(output = &quot;tokenized&quot;, input = &quot;isi&quot;)</code></pre>
+</div>
+<div id="remove-unnecessary-part-of-string" class="section level2">
+<h2>Remove Unnecessary Part of String</h2>
+<pre class="r"><code># remove everithing inside paranthesis
+berita$isi[1] %&gt;% 
+  str_replace(pattern = &quot;\\(\\d+\\)&quot;, replacement = &quot;&quot;)</code></pre>
+<pre class="r"><code># removing paranthesis and date inside it
+berita[1,2] %&gt;% 
+  gsub(pattern = &quot;[()]&quot;, replacement = &quot;&quot;) %&gt;% 
+  replace_date(replacement = &quot;&quot;)</code></pre>
+<pre class="r"><code># Removing character before '-'
+berita[1,2] %&gt;% 
+  str_replace(pattern = &quot;.*-&quot;, &quot;&quot;) %&gt;% 
+  str_trim()</code></pre>
+</div>
+<div id="stemming" class="section level2">
+<h2>stemming</h2>
+<pre class="r"><code>hunspell_stem(&quot;mempertanggungjawabkan&quot;, dict = dictionary(&quot;id_ID&quot;))[[1]]</code></pre>
+<pre class="r"><code>berita[1,2] %&gt;% 
+  unnest_tokens(output = &quot;tokenized&quot;, &quot;isi&quot;) %&gt;% 
+  mutate(tokenized = hunspell_stem(tokenized, dict = dictionary(&quot;id_ID&quot;))) %&gt;% 
+  unnest()</code></pre>
+</div>
+<div id="membuang-stopwords" class="section level2">
+<h2>Membuang stopwords</h2>
+<pre class="r"><code># Mengambil stopword
+stopwords_indo &lt;- read_csv(&quot;https://raw.githubusercontent.com/masdevid/ID-Stopwords/master/id.stopwords.02.01.2016.txt&quot;, col_names = &quot;stopword&quot;)
+
+berita[1,2] %&gt;% 
+  unnest_tokens(output = &quot;tokenized&quot;, input = &quot;isi&quot;) %&gt;% 
+  anti_join(y = stopwords_indo, by = c(&quot;tokenized&quot;=&quot;stopword&quot;))</code></pre>
+</div>
+<div id="visualisasi-wordcloud" class="section level2">
+<h2>Visualisasi Wordcloud</h2>
+<pre class="r"><code>berita[1,2] %&gt;%
+  mutate(isi = gsub(pattern = &quot;[()]&quot;, replacement = &quot;&quot;, x = isi))%&gt;% 
+  mutate(isi = replace_date(replacement = &quot;&quot;, x = isi)) %&gt;%
+  mutate(isi = str_replace(pattern = &quot;.*-&quot;, replacement = &quot;&quot;,string = isi)) %&gt;%
+  unnest_tokens(output = &quot;tokenized&quot;, input = &quot;isi&quot;) %&gt;% 
+  mutate(tokenized = hunspell_stem(tokenized, dict = dictionary(&quot;id_ID&quot;))) %&gt;% 
+  unnest() %&gt;% 
+  anti_join(y = stopwords_indo, by = c(&quot;tokenized&quot;=&quot;stopword&quot;)) %&gt;% 
+  count(tokenized, sort = T) %&gt;% 
+  wordcloud2()</code></pre>
+</div>
+<div id="visualisasi-diagram-batang" class="section level2">
+<h2>Visualisasi diagram batang</h2>
+<pre class="r"><code>berita[1,2] %&gt;%
+  mutate(isi = gsub(pattern = &quot;[()]&quot;, replacement = &quot;&quot;, x = isi))%&gt;% 
+  mutate(isi = replace_date(replacement = &quot;&quot;, x = isi)) %&gt;%
+  mutate(isi = str_replace(pattern = &quot;.*-&quot;, replacement = &quot;&quot;,string = isi)) %&gt;%
+  unnest_tokens(output = &quot;tokenized&quot;, input = &quot;isi&quot;) %&gt;% 
+  mutate(tokenized = hunspell_stem(tokenized, dict = dictionary(&quot;id_ID&quot;))) %&gt;% 
+  unnest() %&gt;% 
+  anti_join(y = stopwords_indo, by = c(&quot;tokenized&quot;=&quot;stopword&quot;)) %&gt;% 
+  count(tokenized, sort = T) %&gt;% 
+  mutate(tokenized = reorder(tokenized,n)) %&gt;% 
+  top_n(10) %&gt;% 
+  ggplot(aes(x = tokenized, y = n)) +
+  geom_col() +
+  coord_flip() +
+  labs(
+    x = &quot;Kata&quot;,
+    y = &quot;Frekuensi&quot;,
+    title = &quot;Frekuensi Kata pada Berita&quot;
+  )</code></pre>
+</div>
+</div>
+<div id="basic-sentiment-analysis" class="section level1">
+<h1>Basic Sentiment Analysis</h1>
+<p>Kita akan melakukan sentimen analisis berdasarkan leksikon. Pertama, ambil stopword pada link berikut:</p>
+<pre class="r"><code>read_csv(&quot;https://raw.githubusercontent.com/masdevid/ID-OpinionWords/master/negative.txt&quot;, col_names = &quot;kata&quot;) %&gt;% 
+  mutate(sentimen = &quot;negatif&quot;) -&gt; negatif
+
+read_csv(&quot;https://raw.githubusercontent.com/masdevid/ID-OpinionWords/master/positive.txt&quot;, col_names = &quot;kata&quot;) %&gt;% 
+  mutate(sentimen = &quot;positif&quot;) -&gt; positif
+
+bind_rows(positif, negatif) -&gt; sentimen_indo</code></pre>
+<pre class="r"><code>berita %&gt;%
+  mutate(isi = gsub(pattern = &quot;[()]&quot;, replacement = &quot;&quot;, x = isi))%&gt;% 
+  mutate(isi = replace_date(replacement = &quot;&quot;, x = isi)) %&gt;%
+  mutate(isi = str_replace(pattern = &quot;.*-&quot;, replacement = &quot;&quot;,string = isi)) %&gt;%
+  unnest_tokens(output = &quot;tokenized&quot;, input = &quot;isi&quot;) %&gt;% 
+  mutate(tokenized = hunspell_stem(tokenized, dict = dictionary(&quot;id_ID&quot;))) %&gt;% 
+  unnest() %&gt;% 
+  anti_join(y = stopwords_indo, by = c(&quot;tokenized&quot;=&quot;stopword&quot;)) %&gt;% 
+  inner_join(y = sentimen_indo, by = c(&quot;tokenized&quot; = &quot;kata&quot;)) %&gt;% 
+  group_by(judul, tokenized) %&gt;% 
+  count(sentimen) %&gt;% 
+  ungroup() %&gt;% 
+  spread(sentimen, n, fill = 0) %&gt;% 
+  mutate(total_sentimen = positif - negatif) %&gt;% 
+  group_by(judul) %&gt;% 
+  summarise(total_sentimen = sum(total_sentimen)) -&gt; sentimen_berita</code></pre>
+<div id="visualisasi-sentimen" class="section level2">
+<h2>Visualisasi Sentimen</h2>
+<pre class="r"><code>sentimen_berita %&gt;% 
+  ggplot(aes(x = judul, y = total_sentimen)) +
+  geom_col() + 
+  coord_flip()</code></pre>
+<pre class="r"><code>sentimen_berita %&gt;% 
+  mutate(status = ifelse(total_sentimen &gt;= 0, &quot;positif&quot;, &quot;negatif&quot;)) %&gt;% 
+  ggplot(aes(x = judul, y = total_sentimen, fill = status)) +
+  geom_col() + 
+  coord_flip()</code></pre>
 </div>
 </div>
 

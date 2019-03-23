@@ -221,11 +221,108 @@ simpan hasilnya kedalam file csv:
 write_csv2(x = berita, path = "data/berita_yang_diambil.csv")
 ```
 
-# Pre-Processing
+# Basic Pre-Processing
 
-## Tokenisasi
+## Lowercasing dan Tokenization
 
 ```{r eval=FALSE}
+berita %>% 
+  select(isi) %>% 
+  unnest_tokens(output = "tokenized", input = "isi")
+```
+
+## Remove Unnecessary Part of String
+
+```{r eval=FALSE}
+# remove everithing inside paranthesis
+berita$isi[1] %>% 
+  str_replace(pattern = "\\(\\d+\\)", replacement = "")
+```
+
+```{r eval=FALSE}
+# removing paranthesis and date inside it
+berita[1,2] %>% 
+  gsub(pattern = "[()]", replacement = "") %>% 
+  replace_date(replacement = "")
+```
+
+```{r eval=FALSE}
+# Removing character before '-'
+berita[1,2] %>% 
+  str_replace(pattern = ".*-", "") %>% 
+  str_trim()
+```
+
+## stemming
+
+```{r eval=FALSE}
+hunspell_stem("mempertanggungjawabkan", dict = dictionary("id_ID"))[[1]]
+```
+
+```{r}
+berita[1,2] %>% 
+  unnest_tokens(output = "tokenized", "isi") %>% 
+  mutate(tokenized = hunspell_stem(tokenized, dict = dictionary("id_ID"))) %>% 
+  unnest()
+```
+
+## Membuang stopwords
+
+```{r}
+# Mengambil stopword
+stopwords_indo <- read_csv("https://raw.githubusercontent.com/masdevid/ID-Stopwords/master/id.stopwords.02.01.2016.txt", col_names = "stopword")
+
+berita[1,2] %>% 
+  unnest_tokens(output = "tokenized", input = "isi") %>% 
+  anti_join(y = stopwords_indo, by = c("tokenized"="stopword"))
+```
+
+
+## Visualisasi Wordcloud
+
+```{r}
+berita[1,2] %>%
+  mutate(isi = gsub(pattern = "[()]", replacement = "", x = isi))%>% 
+  mutate(isi = replace_date(replacement = "", x = isi)) %>%
+  mutate(isi = str_replace(pattern = ".*-", replacement = "",string = isi)) %>%
+  unnest_tokens(output = "tokenized", input = "isi") %>% 
+  mutate(tokenized = hunspell_stem(tokenized, dict = dictionary("id_ID"))) %>% 
+  unnest() %>% 
+  anti_join(y = stopwords_indo, by = c("tokenized"="stopword")) %>% 
+  count(tokenized, sort = T) %>% 
+  wordcloud2()
+```
+
+## Visualisasi diagram batang
+
+```{r}
+berita[1,2] %>%
+  mutate(isi = gsub(pattern = "[()]", replacement = "", x = isi))%>% 
+  mutate(isi = replace_date(replacement = "", x = isi)) %>%
+  mutate(isi = str_replace(pattern = ".*-", replacement = "",string = isi)) %>%
+  unnest_tokens(output = "tokenized", input = "isi") %>% 
+  mutate(tokenized = hunspell_stem(tokenized, dict = dictionary("id_ID"))) %>% 
+  unnest() %>% 
+  anti_join(y = stopwords_indo, by = c("tokenized"="stopword")) %>% 
+  count(tokenized, sort = T) %>% 
+  mutate(tokenized = reorder(tokenized,n)) %>% 
+  top_n(10) %>% 
+  ggplot(aes(x = tokenized, y = n)) +
+  geom_col() +
+  coord_flip() +
+  labs(
+    x = "Kata",
+    y = "Frekuensi",
+    title = "Frekuensi Kata pada Berita"
+  )
+```
+
+
+# Basic Sentiment Analysis
+
+Kita akan melakukan sentimen analisis berdasarkan leksikon. Pertama, ambil stopword pada link berikut:
+
+```{r}
 
 ```
 

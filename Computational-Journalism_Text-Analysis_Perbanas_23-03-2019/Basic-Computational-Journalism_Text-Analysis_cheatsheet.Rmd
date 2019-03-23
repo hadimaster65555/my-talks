@@ -21,6 +21,25 @@ knitr::opts_chunk$set(tidy = FALSE, cache.extra = packageVersion('tufte'))
 options(htmltools.dir.version = FALSE)
 ```
 
+# Instalasi dan memuat library
+```{r eval=FALSE}
+install.packages("rvest")
+install.packages("tidyverse")
+install.packages("tidytext")
+install.packages("hunspell")
+install.packages("textClean")
+install.packages("wordcloud2")
+
+library(rvest)
+library(tidyverse)
+library(tidytext)
+library(hunspell)
+library(textclean)
+library(wordcloud2)
+
+```
+
+
 # Mining Data From Webpage
 
 ## Mengambil judul berita
@@ -259,7 +278,7 @@ berita[1,2] %>%
 hunspell_stem("mempertanggungjawabkan", dict = dictionary("id_ID"))[[1]]
 ```
 
-```{r}
+```{r eval=FALSE}
 berita[1,2] %>% 
   unnest_tokens(output = "tokenized", "isi") %>% 
   mutate(tokenized = hunspell_stem(tokenized, dict = dictionary("id_ID"))) %>% 
@@ -268,7 +287,7 @@ berita[1,2] %>%
 
 ## Membuang stopwords
 
-```{r}
+```{r eval=FALSE}
 # Mengambil stopword
 stopwords_indo <- read_csv("https://raw.githubusercontent.com/masdevid/ID-Stopwords/master/id.stopwords.02.01.2016.txt", col_names = "stopword")
 
@@ -280,7 +299,7 @@ berita[1,2] %>%
 
 ## Visualisasi Wordcloud
 
-```{r}
+```{r eval=FALSE}
 berita[1,2] %>%
   mutate(isi = gsub(pattern = "[()]", replacement = "", x = isi))%>% 
   mutate(isi = replace_date(replacement = "", x = isi)) %>%
@@ -295,7 +314,7 @@ berita[1,2] %>%
 
 ## Visualisasi diagram batang
 
-```{r}
+```{r eval=FALSE}
 berita[1,2] %>%
   mutate(isi = gsub(pattern = "[()]", replacement = "", x = isi))%>% 
   mutate(isi = replace_date(replacement = "", x = isi)) %>%
@@ -322,7 +341,49 @@ berita[1,2] %>%
 
 Kita akan melakukan sentimen analisis berdasarkan leksikon. Pertama, ambil stopword pada link berikut:
 
-```{r}
+```{r eval=FALSE}
+read_csv("https://raw.githubusercontent.com/masdevid/ID-OpinionWords/master/negative.txt", col_names = "kata") %>% 
+  mutate(sentimen = "negatif") -> negatif
 
+read_csv("https://raw.githubusercontent.com/masdevid/ID-OpinionWords/master/positive.txt", col_names = "kata") %>% 
+  mutate(sentimen = "positif") -> positif
+
+bind_rows(positif, negatif) -> sentimen_indo
+```
+
+```{r eval=FALSE}
+berita %>%
+  mutate(isi = gsub(pattern = "[()]", replacement = "", x = isi))%>% 
+  mutate(isi = replace_date(replacement = "", x = isi)) %>%
+  mutate(isi = str_replace(pattern = ".*-", replacement = "",string = isi)) %>%
+  unnest_tokens(output = "tokenized", input = "isi") %>% 
+  mutate(tokenized = hunspell_stem(tokenized, dict = dictionary("id_ID"))) %>% 
+  unnest() %>% 
+  anti_join(y = stopwords_indo, by = c("tokenized"="stopword")) %>% 
+  inner_join(y = sentimen_indo, by = c("tokenized" = "kata")) %>% 
+  group_by(judul, tokenized) %>% 
+  count(sentimen) %>% 
+  ungroup() %>% 
+  spread(sentimen, n, fill = 0) %>% 
+  mutate(total_sentimen = positif - negatif) %>% 
+  group_by(judul) %>% 
+  summarise(total_sentimen = sum(total_sentimen)) -> sentimen_berita
+```
+
+## Visualisasi Sentimen
+
+```{r}
+sentimen_berita %>% 
+  ggplot(aes(x = judul, y = total_sentimen)) +
+  geom_col() + 
+  coord_flip()
+```
+
+```{r}
+sentimen_berita %>% 
+  mutate(status = ifelse(total_sentimen >= 0, "positif", "negatif")) %>% 
+  ggplot(aes(x = judul, y = total_sentimen, fill = status)) +
+  geom_col() + 
+  coord_flip()
 ```
 
